@@ -106,6 +106,38 @@ app.post("/api/simulator/run", (req, res) => {
   });
 });
 
+app.post("/api/simulator/comments", (req, res) => {
+  const { reelId = "REEL001", users = 5 } = req.body;
+  const reel = reels.get(reelId);
+
+  if (!reel) return res.status(404).json({ error: "Dummy reel not found" });
+
+  const count = Math.max(1, Math.min(Number(users) || 1, 50));
+
+  for (let i = 1; i <= count; i++) {
+    const userId = `BOT_USER_${String(i).padStart(3, "0")}`;
+    const text = comments[(i - 1) % comments.length];
+
+    reel.comments += 1;
+    reel.activity.unshift({
+      type: "comment",
+      userId,
+      text,
+      at: new Date().toISOString()
+    });
+  }
+
+  reel.activity = reel.activity.slice(0, 100);
+
+  res.json({
+    success: true,
+    mode: "dummy-only",
+    simulatedUsers: count,
+    likes: reel.likes,
+    comments: reel.comments
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Reel Engagement Lab running on port ${PORT}`);
 });
