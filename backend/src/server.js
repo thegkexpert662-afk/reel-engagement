@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4002;
 
 const reels = new Map([
   ["REEL001", {
@@ -30,7 +30,8 @@ app.get("/", (req, res) => {
   res.json({
     name: "Reel Engagement Lab",
     mode: "Educational Dummy Simulator",
-    status: "running"
+    status: "running",
+    port: PORT
   });
 });
 
@@ -61,7 +62,8 @@ app.post("/api/reels/:id/comment", (req, res) => {
   if (!reel) return res.status(404).json({ error: "Dummy reel not found" });
 
   const userId = req.body.userId || "DUMMY_USER";
-  const text = req.body.text || comments[Math.floor(Math.random() * comments.length)];
+  const text = req.body.text ||
+    comments[Math.floor(Math.random() * comments.length)];
 
   reel.comments += 1;
   reel.activity.unshift({
