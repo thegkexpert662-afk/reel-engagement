@@ -32,6 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int likes = 0;
   int comments = 0;
   bool running = false;
+  bool commentRunning = false;
   String status = 'Backend not checked yet';
   List<Map<String, dynamic>> activity = [];
 
@@ -66,7 +67,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final users = int.tryParse(usersController.text) ?? 10;
     setState(() {
       running = true;
-      status = 'Running dummy simulation...';
+      status = 'Running dummy like simulation...';
     });
 
     try {
@@ -82,13 +83,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (response.statusCode != 200) throw Exception('Simulation failed');
 
       await loadReel();
-      if (mounted) {
-        setState(() => status = 'Simulation completed');
-      }
+      if (mounted) setState(() => status = 'Like simulation completed');
     } catch (e) {
       setState(() => status = 'Simulation failed: $e');
     } finally {
       if (mounted) setState(() => running = false);
+    }
+  }
+
+  Future<void> startCommentSimulation() async {
+    final users = int.tryParse(usersController.text) ?? 5;
+    setState(() {
+      commentRunning = true;
+      status = 'Running dummy comment simulation...';
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/api/simulator/comments'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'reelId': reelController.text.trim(),
+          'users': users,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Comment simulation failed');
+      }
+
+      await loadReel();
+      if (mounted) setState(() => status = 'Comment simulation completed');
+    } catch (e) {
+      setState(() => status = 'Comment simulation failed: $e');
+    } finally {
+      if (mounted) setState(() => commentRunning = false);
     }
   }
 
@@ -108,7 +137,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       actions: [
         IconButton(
-          onPressed: running ? null : loadReel,
+          onPressed: running || commentRunning ? null : loadReel,
           icon: const Icon(Icons.sync),
         ),
       ],
@@ -194,7 +223,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: running ? null : loadReel,
+                      onPressed:
+                          running || commentRunning ? null : loadReel,
                       icon: const Icon(Icons.refresh),
                       label: const Text('Load Reel'),
                     ),
@@ -202,16 +232,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: running ? null : startSimulation,
+                      onPressed:
+                          running || commentRunning ? null : startSimulation,
                       icon: Icon(
-                        running ? Icons.hourglass_top : Icons.play_arrow,
+                        running ? Icons.hourglass_top : Icons.favorite,
                       ),
                       label: Text(
-                        running ? 'Running...' : 'Start Simulation',
+                        running ? 'Running...' : 'Simulate Likes',
                       ),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed:
+                      running || commentRunning
+                          ? null
+                          : startCommentSimulation,
+                  icon: Icon(
+                    commentRunning
+                        ? Icons.hourglass_top
+                        : Icons.comment,
+                  ),
+                  label: Text(
+                    commentRunning
+                        ? 'Running Comments...'
+                        : 'Simulate Comments',
+                  ),
+                ),
               ),
               const SizedBox(height: 35),
               const Text(
@@ -276,7 +327,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Padding(
           padding: EdgeInsets.all(20),
           child: Center(
-            child: Text('No activity yet. Start the dummy simulation.'),
+            child: Text('No activity yet. Start a dummy simulation.'),
           ),
         ),
       );
